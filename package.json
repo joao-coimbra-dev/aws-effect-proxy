@@ -1,0 +1,36 @@
+{
+  "name": "aws-effect-proxy",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/handler.js",
+  "scripts": {
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/index.mjs --format=esm",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "lint:type-aware": "oxlint --type-aware",
+    "prepare": "effect-language-service patch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect-aws/lambda": "^1.5.1",
+    "effect": "^3.19.14"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.159",
+    "@types/node": "^25.0.8",
+    "esbuild": "^0.27.2",
+    "oxfmt": "^0.24.0",
+    "oxlint": "^1.39.0",
+    "oxlint-tsgolint": "^0.11.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17"
+  },
+  "packageManager": "pnpm@10.27.0"
+}

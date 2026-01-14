@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+dist/
+
+# Typescript
+*.tsbuildinfo
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+/.idea/

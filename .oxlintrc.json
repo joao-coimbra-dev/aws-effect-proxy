@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist", "node_modules"],
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "eslint/no-unused-vars": "error",
+    "typescript/explicit-module-boundary-types": "error",
+    "typescript/no-explicit-any": "warn",
+    "eslint/no-var": "error",
+    "eslint/prefer-const": "error"
+  }
+}
