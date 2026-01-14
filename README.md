@@ -6,22 +6,22 @@ This repository contains a simple AWS Lambda function, written in TypeScript usi
 
 The project consists of:
 
-*   **An Effect-based Lambda function**: This function, written in TypeScript and leveraging the Effect library for robust, type-safe, and functional error handling, receives a request from an Amazon API Gateway, forwards it to a target URL, and returns the response to the original caller. The target URL is configured via a `TARGET_URL` environment variable.
-*   **Terraform configuration**: The configuration in the `terraform/` directory defines the necessary AWS resources to deploy the proxy, including:
-    *   An AWS Lambda function.
-    *   An IAM role for the Lambda function.
-    *   An HTTP API Gateway with an integration, route, and stage.
-    *   Permissions for the API Gateway to invoke the Lambda function.
+- **An Effect-based Lambda function**: This function, written in TypeScript and leveraging the Effect library for robust, type-safe, and functional error handling, receives a request from an Amazon API Gateway, forwards it to a target URL, and returns the response to the original caller. The target URL is configured via a `TARGET_URL` environment variable.
+- **Terraform configuration**: The configuration in the `terraform/` directory defines the necessary AWS resources to deploy the proxy, including:
+  - An AWS Lambda function.
+  - An IAM role for the Lambda function.
+  - An HTTP API Gateway with an integration, route, and stage.
+  - Permissions for the API Gateway to invoke the Lambda function.
 
 ## How to use it
 
 ### Prerequisites
 
-*   [Node.js](https://nodejs.org/) (as specified in `.nvmrc`)
-*   [pnpm](https://pnpm.io/)
-*   [Terraform](https://www.terraform.io/)
-*   [AWS CLI](https://aws.amazon.com/cli/) configured with your credentials.
-*   [TFLint](https://github.com/terraform-linters/tflint) (for linting Terraform code)
+- [Node.js](https://nodejs.org/) (as specified in `.nvmrc`)
+- [pnpm](https://pnpm.io/)
+- [Terraform](https://www.terraform.io/)
+- [AWS CLI](https://aws.amazon.com/cli/) configured with your credentials.
+- [TFLint](https://github.com/terraform-linters/tflint) (for linting Terraform code)
 
 ### Installation
 
