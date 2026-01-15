@@ -16,6 +16,7 @@
     "lint:type-aware": "oxlint --type-aware",
     "prepare": "effect-language-service patch",
     "test": "vitest",
+    "test:run": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

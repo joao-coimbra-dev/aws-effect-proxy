@@ -1,49 +1,8 @@
 import { LambdaHandler } from "@effect-aws/lambda";
-import { Chunk, Config, Data, Effect } from "effect";
-import * as ReadonlyArray from "effect/Array";
+import { Config, Effect } from "effect";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-
-class ProxyFetchError extends Data.TaggedError("ProxyFetchError")<{
-  error: unknown;
-}> {}
-
-class ReadResponseBodyError extends Data.TaggedError("ReadResponseBodyError")<{
-  error: unknown;
-}> {}
-
-const ExcludedHeaders: ReadonlyArray<string> = Chunk.toReadonlyArray(
-  Chunk.make(
-    "transfer-encoding",
-    "connection",
-    "keep-alive",
-    "proxy-authenticate",
-    "proxy-authorization",
-    "te",
-    "trailers",
-    "upgrade",
-  ),
-);
-
-// Filter out hop-by-hop headers and correctly handle multi-value headers
-const filterResponseHeadersEffect = (headers: Headers) =>
-  Effect.succeed(headers).pipe(
-    Effect.map(ReadonlyArray.fromIterable),
-    Effect.map(
-      ReadonlyArray.reduce(
-        {} as { [key: string]: string[] },
-        (acc: { [key: string]: string[] }, [key, value]: [string, string]) => {
-          if (!ExcludedHeaders.includes(key.toLowerCase())) {
-            if (!acc[key]) {
-              acc[key] = [];
-            }
-            acc[key].push(value);
-          }
-
-          return acc;
-        },
-      ),
-    ),
-  );
+import { ProxyFetchError, ReadResponseBodyError } from "@domain/errors.js";
+import { filterResponseHeaders } from "@src/utils/filterResponseHeaders.js";
 
 const handler = LambdaHandler.make((event: APIGatewayProxyEventV2) =>
   Effect.gen(function* () {
@@ -77,7 +36,7 @@ const handler = LambdaHandler.make((event: APIGatewayProxyEventV2) =>
       catch: (error) => new ReadResponseBodyError({ error }),
     });
 
-    const multiValueHeaders = yield* filterResponseHeadersEffect(response.headers);
+    const multiValueHeaders = yield* filterResponseHeaders(response.headers);
 
     return {
       statusCode: response.status,
