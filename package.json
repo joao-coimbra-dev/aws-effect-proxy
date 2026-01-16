@@ -24,6 +24,7 @@
     "effect": "^3.19.14"
   },
   "devDependencies": {
+    "@effect/language-service": "^0.65.0",
     "@types/aws-lambda": "^8.10.159",
     "@types/node": "^25.0.8",
     "esbuild": "^0.27.2",
