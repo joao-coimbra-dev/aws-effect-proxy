@@ -8,7 +8,7 @@
   "type": "module",
   "main": "src/handler.js",
   "scripts": {
-    "build": "esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/index.mjs --format=esm",
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm && esbuild src/users-handler.ts --bundle --platform=node --target=node24 --outfile=dist/users-handler.mjs --format=esm",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint",
