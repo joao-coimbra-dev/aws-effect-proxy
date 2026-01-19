@@ -9,3 +9,9 @@ variable "target_url" {
   type        = string
   default     = "https://jsonplaceholder.typicode.com" # Provide a default or make it required
 }
+
+variable "dynamodb_table_name" {
+  description = "The name for the DynamoDB users table"
+  type        = string
+  default     = "users-table"
+}
