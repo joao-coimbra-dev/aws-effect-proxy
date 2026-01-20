@@ -8,4 +8,8 @@ class ReadResponseBodyError extends Data.TaggedError("ReadResponseBodyError")<{
   readonly error: unknown;
 }> {}
 
-export { ProxyFetchError, ReadResponseBodyError };
+class ParseBodyError extends Data.TaggedError("ParseBodyError")<{
+  readonly cause: unknown;
+}> {}
+
+export { ProxyFetchError, ReadResponseBodyError, ParseBodyError };

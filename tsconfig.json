@@ -17,7 +17,9 @@
     "paths": {
       "@src/*": ["src/*"],
       "@domain/*": ["src/domain/*"],
-      "@utils/*": ["src/utils/*"]
+      "@utils/*": ["src/utils/*"],
+      "@repositories/*": ["src/repositories/*"],
+      "@services/*": ["src/services/*"]
     },
     "plugins": [
       {

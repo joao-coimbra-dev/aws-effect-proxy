@@ -160,3 +160,154 @@ resource "aws_lambda_permission" "apigw_invoke" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
 }
+
+resource "aws_dynamodb_table" "users_table" {
+  name           = var.dynamodb_table_name
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  tags = {
+    Name      = "${var.dynamodb_table_name}-table"
+    Project   = "aws-proxy"
+    ManagedBy = "Terraform"
+  }
+}
+
+# --------------------------------------------------------------------------------
+# Resources for Users CRUD Lambda
+# --------------------------------------------------------------------------------
+
+data "archive_file" "users_lambda_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../dist/users-handler.mjs"
+  output_path = "${path.module}/../dist/users-lambda.zip"
+}
+
+resource "aws_lambda_function" "users_lambda" {
+  function_name = "users-crud-func"
+  role          = aws_iam_role.users_lambda_exec.arn
+  handler       = "users-handler.handler"
+  runtime       = "nodejs24.x"
+  architectures = ["arm64"]
+
+  filename         = data.archive_file.users_lambda_zip.output_path
+  source_code_hash = data.archive_file.users_lambda_zip.output_base64sha256
+
+  timeout     = 10
+  memory_size = 128
+
+  environment {
+    variables = {
+      USERS_TABLE_NAME = aws_dynamodb_table.users_table.name
+    }
+  }
+
+  tags = {
+    Name      = "users-crud-func"
+    Project   = "aws-proxy"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "aws_iam_role" "users_lambda_exec" {
+  name = "users_lambda_exec_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = {
+    Name      = "users-lambda-exec-role"
+    Project   = "aws-proxy"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "users_lambda_logs" {
+  role       = aws_iam_role.users_lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "users_lambda_dynamodb_policy" {
+  name = "users-lambda-dynamodb-policy"
+  role = aws_iam_role.users_lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Scan"
+        ]
+        Resource = aws_dynamodb_table.users_table.arn
+      }
+    ]
+  })
+}
+
+resource "aws_apigatewayv2_integration" "users_integration" {
+  api_id           = aws_apigatewayv2_api.http_api.id
+  integration_type = "AWS_PROXY"
+
+  integration_uri    = aws_lambda_function.users_lambda.invoke_arn
+  integration_method = "POST"
+  payload_format_version = "2.0"
+}
+
+# --- Users CRUD Routes ---
+
+resource "aws_apigatewayv2_route" "users_create" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "POST /users"
+  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "users_list" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /users"
+  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "users_get" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /users/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "users_update" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "PUT /users/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "users_delete" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "DELETE /users/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+}
+
+
+resource "aws_lambda_permission" "apigw_invoke_users" {
+  statement_id  = "AllowAPIGatewayInvokeUsers"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.users_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}
