@@ -8,6 +8,9 @@ export class UserService extends Context.Tag("UserService")<
   {
     readonly createUser: (userInput: UserInput) => Effect.Effect<User, UserRepositoryError>;
     readonly getUsers: () => Effect.Effect<User[], UserRepositoryError>;
+    readonly getUserById: (id: string) => Effect.Effect<User | null, UserRepositoryError>;
+    readonly deleteUser: (id: string) => Effect.Effect<void, UserRepositoryError>;
+    readonly updateUser: (user: User) => Effect.Effect<void, UserRepositoryError>;
   }
 >() {}
 
@@ -26,6 +29,15 @@ export const UserServiceLive = Layer.effect(
       }),
       getUsers: Effect.fn("UserService.getUsers")(function* () {
         return yield* userRepository.getUsers();
+      }),
+      getUserById: Effect.fn("UserService.getUserById")(function* (id: string) {
+        return yield* userRepository.getUserById(id);
+      }),
+      deleteUser: Effect.fn("UserService.deleteUser")(function* (id: string) {
+        yield* userRepository.deleteUser(id);
+      }),
+      updateUser: Effect.fn("UserService.updateUser")(function* (user: User) {
+        return yield* userRepository.updateUser(user);
       }),
     };
   }),
