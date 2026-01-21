@@ -3,9 +3,9 @@ import { Effect, Layer, Schema, Config, ConfigError, ParseResult } from "effect"
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { UserService, UserServiceLive } from "@services/user.js";
 import { UserRepositoryError, UserRepositoryLive } from "@repositories/user.js";
+import { ParseBodyError } from "@domain/errors.js";
 import { UserInput } from "@domain/user.js";
 import { DynamoDB } from "@effect-aws/client-dynamodb";
-import { ParseBodyError } from "@domain/errors.js";
 
 const usersCrudEffect = Effect.fn("usersCrudEffect")(function* (event: APIGatewayProxyEventV2) {
   const userService = yield* UserService;
@@ -35,7 +35,7 @@ const usersCrudEffect = Effect.fn("usersCrudEffect")(function* (event: APIGatewa
       return yield* postEffect;
     }
     case "GET /users": {
-      const postEffect = Effect.gen(function* () {
+      const getEffect = Effect.gen(function* () {
         const users = yield* userService.getUsers();
 
         return {
@@ -45,7 +45,90 @@ const usersCrudEffect = Effect.fn("usersCrudEffect")(function* (event: APIGatewa
         };
       });
 
-      return yield* postEffect;
+      return yield* getEffect;
+    }
+    case "GET /users/{id}": {
+      const getByIdEffect = Effect.gen(function* () {
+        const id = event.pathParameters?.id;
+
+        if (!id) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ message: "User ID is missing from path parameters" }),
+            headers: { "Content-Type": "application/json" },
+          };
+        }
+
+        const user = yield* userService.getUserById(id);
+
+        if (!user) {
+          return {
+            statusCode: 404,
+            body: JSON.stringify({ message: `User with id ${id} not found` }),
+            headers: { "Content-Type": "application/json" },
+          };
+        }
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify(user),
+          headers: { "Content-Type": "application/json" },
+        };
+      });
+
+      return yield* getByIdEffect;
+    }
+    case "PUT /users/{id}": {
+      const putEffect = Effect.gen(function* () {
+        const id = event.pathParameters?.id;
+
+        if (!id) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ message: "User ID is missing from path parameters" }),
+            headers: { "Content-Type": "application/json" },
+          };
+        }
+
+        const parseBody = Effect.try({
+          try: () => JSON.parse(event.body ?? "{}"),
+          catch: (cause) => new ParseBodyError({ cause }),
+        });
+
+        const body = yield* parseBody;
+        const userInput = yield* Schema.decode(UserInput)(body);
+
+        const updatedUser = yield* userService.updateUser({ id, ...userInput });
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify(updatedUser),
+          headers: { "Content-Type": "application/json" },
+        };
+      });
+
+      return yield* putEffect;
+    }
+    case "DELETE /users/{id}": {
+      const deleteEffect = Effect.gen(function* () {
+        const id = event.pathParameters?.id;
+
+        if (!id) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ message: "User ID is missing from path parameters" }),
+            headers: { "Content-Type": "application/json" },
+          };
+        }
+
+        yield* userService.deleteUser(id);
+
+        return {
+          statusCode: 200,
+        };
+      });
+
+      return yield* deleteEffect;
     }
 
     default:
@@ -102,7 +185,7 @@ const handler = LambdaHandler.make(
             statusCode: 500,
             body: JSON.stringify({
               message: "Database operation failed",
-              error: String(error.cause),
+              error: JSON.stringify(error.cause),
             }),
             headers: { "Content-Type": "application/json" },
           }),
