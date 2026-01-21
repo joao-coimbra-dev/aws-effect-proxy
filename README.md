@@ -7,11 +7,12 @@ This repository contains a simple AWS Lambda function, written in TypeScript usi
 The project consists of:
 
 - **An Effect-based Lambda function**: This function, written in TypeScript and leveraging the Effect library for robust, type-safe, and functional error handling, receives a request from an Amazon API Gateway, forwards it to a target URL, and returns the response to the original caller. The target URL is configured via a `TARGET_URL` environment variable.
-- **Terraform configuration**: The configuration in the `terraform/` directory defines the necessary AWS resources to deploy the proxy, including:
-  - An AWS Lambda function.
-  - An IAM role for the Lambda function.
-  - An HTTP API Gateway with an integration, route, and stage.
-  - Permissions for the API Gateway to invoke the Lambda function.
+- **Terraform configuration**: The configuration in the `terraform/` directory defines all the necessary AWS resources. It is organized into reusable modules to promote clarity, isolation, and reusability. The main `main.tf` file orchestrates these modules to build the application's infrastructure.
+  - **Modules**:
+    - `modules/lambda_function`: A generic module for creating an AWS Lambda function with its IAM role. It is instantiated for both the proxy and the user services.
+    - `modules/dynamodb_table`: A module for creating the DynamoDB table for users.
+    - `modules/api_gateway`: A module for creating the HTTP API Gateway, including all routes and integrations.
+  - **Root Files**: The `main.tf`, `variables.tf`, and `outputs.tf` in the `terraform/` directory define the high-level architecture and connect the modules together.
 
 ## How to use it
 
