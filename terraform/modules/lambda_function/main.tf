@@ -1,3 +1,17 @@
+terraform {
+  required_version = "~> 1.14.3"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.7"
+    }
+  }
+}
+
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_file = var.source_file
@@ -8,7 +22,7 @@ resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_exec.arn
   handler       = var.handler
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs24.x"
   architectures = ["arm64"]
 
   filename         = data.archive_file.lambda_zip.output_path

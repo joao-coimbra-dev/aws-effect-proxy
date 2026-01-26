@@ -8,7 +8,7 @@
   "type": "module",
   "main": "src/handler.js",
   "scripts": {
-    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/users-handler.ts --bundle --platform=node --target=node24 --outfile=dist/users-handler.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/users-handler.ts --bundle --platform=node --target=node24 --outfile=dist/users-handler.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/handlers/auth/index.ts --bundle --platform=node --target=node24 --outfile=dist/auth-handler.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint",
@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.972.0",
     "@aws-sdk/client-dynamodb": "^3.971.0",
     "@aws-sdk/util-dynamodb": "^3.971.0",
     "@effect-aws/client-dynamodb": "^1.10.6",

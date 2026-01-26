@@ -19,7 +19,8 @@
       "@domain/*": ["src/domain/*"],
       "@utils/*": ["src/utils/*"],
       "@repositories/*": ["src/repositories/*"],
-      "@services/*": ["src/services/*"]
+      "@services/*": ["src/services/*"],
+      "@handlers/*": ["src/handlers/*"]
     },
     "plugins": [
       {

@@ -74,6 +74,10 @@ module "api_gateway" {
       lambda_invoke_arn    = module.users_lambda.invoke_arn
       lambda_function_name = module.users_lambda.function_name
     }
+    "auth" = {
+      lambda_invoke_arn    = module.auth_lambda.invoke_arn
+      lambda_function_name = module.auth_lambda.function_name
+    }
   }
   routes = {
     "POST /users"        = "users"
@@ -81,6 +85,40 @@ module "api_gateway" {
     "GET /users/{id}"    = "users"
     "PUT /users/{id}"    = "users"
     "DELETE /users/{id}" = "users"
+    "POST /signup"       = "auth"
+    "POST /confirm"      = "auth"
     "ANY /{proxy+}"      = "proxy"
   }
+}
+
+module "cognito_user_pool" {
+  source         = "./modules/cognito_user_pool"
+  user_pool_name = var.cognito_user_pool_name
+  client_name    = var.cognito_client_name
+}
+
+module "auth_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "auth-func"
+  handler       = "auth-handler.handler"
+  source_file   = "${path.module}/../dist/auth-handler.mjs"
+  output_path   = "${path.module}/../dist/auth-lambda.zip"
+  environment_variables = {
+    COGNITO_USER_POOL_ID = module.cognito_user_pool.user_pool_id
+    COGNITO_CLIENT_ID    = module.cognito_user_pool.client_id
+  }
+  additional_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:SignUp",
+          "cognito-idp:ConfirmSignUp",
+          "cognito-idp:AdminInitiateAuth"
+        ]
+        Resource = module.cognito_user_pool.user_pool_arn
+      }
+    ]
+  })
 }
