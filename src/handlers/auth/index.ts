@@ -3,7 +3,7 @@ import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { ConfigError, Effect, ParseResult } from "effect";
 import { AuthError, ErrorTags } from "@handlers/auth/domain/errors.js";
 import { CognitoIdentityProvider } from "@handlers/auth/domain/cognitoItentityProvider.js";
-import { CognitoIdentityProviderLive } from "@handlers/auth/services/cognito.js";
+import { CognitoIdentityProviderLive } from "@handlers/auth/layers/cognito.js";
 import { signup } from "@handlers/auth/services/signup.js";
 import { confirm } from "@handlers/auth/services/confirm.js";
 import { ParseBodyError } from "@domain/errors.js";

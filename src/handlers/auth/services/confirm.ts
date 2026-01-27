@@ -32,7 +32,7 @@ const cognitoIssueJWT = Effect.fn("cognitoIssueJWT")(function* (email: string) {
   const userPoolId = yield* Config.string("COGNITO_USER_POOL_ID");
 
   return yield* cognito.adminInitiateAuth({
-    AuthFlow: AuthFlowType.ADMIN_NO_SRP_AUTH,
+    AuthFlow: AuthFlowType.CUSTOM_AUTH,
     ClientId: clientId,
     UserPoolId: userPoolId,
     AuthParameters: {
@@ -46,15 +46,13 @@ const confirm = Effect.fn("confirm")(function* (eventBody?: string) {
 
   yield* cognitoConfirm(decodedBody);
 
-  const output = yield* cognitoIssueJWT(decodedBody.email);
-
-  yield* Effect.logInfo(output);
+  const { AuthenticationResult } = yield* cognitoIssueJWT(decodedBody.email);
 
   return yield* Effect.succeed({
     statusCode: 200,
     body: JSON.stringify({
       message: "Email confirmed successfully and logged in.",
-      ...output.AuthenticationResult,
+      ...AuthenticationResult,
     }),
     headers: { "Content-Type": "application/json" },
   });

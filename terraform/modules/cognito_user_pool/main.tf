@@ -19,6 +19,12 @@ resource "aws_cognito_user_pool" "pool" {
     required                 = true
     mutable                  = false
   }
+
+  lambda_config {
+    define_auth_challenge = var.define_auth_challenge_arn
+    create_auth_challenge = var.create_auth_challenge_arn
+    verify_auth_challenge_response = var.verify_auth_challenge_arn
+  }
 }
 
 resource "aws_cognito_user_pool_client" "client" {
@@ -26,7 +32,6 @@ resource "aws_cognito_user_pool_client" "client" {
   user_pool_id = aws_cognito_user_pool.pool.id
 
   explicit_auth_flows = [
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
     "ALLOW_CUSTOM_AUTH"
   ]

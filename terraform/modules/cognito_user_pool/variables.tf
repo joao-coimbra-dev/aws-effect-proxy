@@ -8,3 +8,21 @@ variable "client_name" {
   type        = string
 }
 
+variable "define_auth_challenge_arn" {
+  description = "The ARN of the Define Auth Challenge Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "create_auth_challenge_arn" {
+  description = "The ARN of the Create Auth Challenge Lambda function"
+  type        = string
+  default     = null
+}
+
+variable "verify_auth_challenge_arn" {
+  description = "The ARN of the Verify Auth Challenge Lambda function"
+  type        = string
+  default     = null
+}
+

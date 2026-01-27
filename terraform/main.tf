@@ -92,9 +92,12 @@ module "api_gateway" {
 }
 
 module "cognito_user_pool" {
-  source         = "./modules/cognito_user_pool"
-  user_pool_name = var.cognito_user_pool_name
-  client_name    = var.cognito_client_name
+  source                      = "./modules/cognito_user_pool"
+  user_pool_name              = var.cognito_user_pool_name
+  client_name                 = var.cognito_client_name
+  define_auth_challenge_arn   = module.define_auth_challenge_lambda.arn
+  create_auth_challenge_arn   = module.create_auth_challenge_lambda.arn
+  verify_auth_challenge_arn   = module.verify_auth_challenge_lambda.arn
 }
 
 module "auth_lambda" {
@@ -121,4 +124,57 @@ module "auth_lambda" {
       }
     ]
   })
+}
+
+# --------------------------------------------------------------------------------
+# Cognito Trigger Lambdas
+# --------------------------------------------------------------------------------
+
+module "define_auth_challenge_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "define-auth-challenge-func"
+  handler       = "define.handler"
+  source_file   = "${path.module}/../dist/define.mjs"
+  output_path   = "${path.module}/../dist/define.zip"
+}
+
+module "create_auth_challenge_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "create-auth-challenge-func"
+  handler       = "create.handler"
+  source_file   = "${path.module}/../dist/create.mjs"
+  output_path   = "${path.module}/../dist/create.zip"
+}
+
+module "verify_auth_challenge_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "verify-auth-challenge-func"
+  handler       = "verify.handler"
+  source_file   = "${path.module}/../dist/verify.mjs"
+  output_path   = "${path.module}/../dist/verify.zip"
+}
+
+# --------------------------------------------------------------------------------
+# Cognito Trigger Permissions
+# --------------------------------------------------------------------------------
+
+resource "aws_lambda_permission" "define_auth_challenge" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.define_auth_challenge_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = module.cognito_user_pool.user_pool_arn
+}
+
+resource "aws_lambda_permission" "create_auth_challenge" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.create_auth_challenge_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = module.cognito_user_pool.user_pool_arn
+}
+
+resource "aws_lambda_permission" "verify_auth_challenge" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.verify_auth_challenge_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = module.cognito_user_pool.user_pool_arn
 }

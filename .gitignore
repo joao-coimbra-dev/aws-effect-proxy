@@ -14,3 +14,4 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 /.idea/
+/GEMINI.md
