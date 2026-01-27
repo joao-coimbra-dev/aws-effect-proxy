@@ -25,7 +25,7 @@ module "users_table" {
 module "proxy_lambda" {
   source        = "./modules/lambda_function"
   function_name = "transparent-proxy-func"
-  handler       = "index.handler"
+  index       = "index.index"
   source_file   = "${path.module}/../dist/index.mjs"
   output_path   = "${path.module}/../dist/lambda.zip"
   timeout       = 29
@@ -38,8 +38,8 @@ module "proxy_lambda" {
 module "users_lambda" {
   source        = "./modules/lambda_function"
   function_name = "users-crud-func"
-  handler       = "users-handler.handler"
-  source_file   = "${path.module}/../dist/users-handler.mjs"
+  index       = "users-index.index"
+  source_file   = "${path.module}/../dist/users-index.mjs"
   output_path   = "${path.module}/../dist/users-lambda.zip"
   environment_variables = {
     USERS_TABLE_NAME = module.users_table.name
@@ -103,8 +103,8 @@ module "cognito_user_pool" {
 module "auth_lambda" {
   source        = "./modules/lambda_function"
   function_name = "auth-func"
-  handler       = "auth-handler.handler"
-  source_file   = "${path.module}/../dist/auth-handler.mjs"
+  index       = "auth-index.index"
+  source_file   = "${path.module}/../dist/auth-index.mjs"
   output_path   = "${path.module}/../dist/auth-lambda.zip"
   environment_variables = {
     COGNITO_USER_POOL_ID = module.cognito_user_pool.user_pool_id
@@ -133,7 +133,7 @@ module "auth_lambda" {
 module "define_auth_challenge_lambda" {
   source        = "./modules/lambda_function"
   function_name = "define-auth-challenge-func"
-  handler       = "define.handler"
+  index       = "define.index"
   source_file   = "${path.module}/../dist/define.mjs"
   output_path   = "${path.module}/../dist/define.zip"
 }
@@ -141,7 +141,7 @@ module "define_auth_challenge_lambda" {
 module "create_auth_challenge_lambda" {
   source        = "./modules/lambda_function"
   function_name = "create-auth-challenge-func"
-  handler       = "create.handler"
+  index       = "create.index"
   source_file   = "${path.module}/../dist/create.mjs"
   output_path   = "${path.module}/../dist/create.zip"
 }
@@ -149,7 +149,7 @@ module "create_auth_challenge_lambda" {
 module "verify_auth_challenge_lambda" {
   source        = "./modules/lambda_function"
   function_name = "verify-auth-challenge-func"
-  handler       = "verify.handler"
+  index       = "verify.index"
   source_file   = "${path.module}/../dist/verify.mjs"
   output_path   = "${path.module}/../dist/verify.zip"
 }

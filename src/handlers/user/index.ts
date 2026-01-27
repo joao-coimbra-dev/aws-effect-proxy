@@ -1,10 +1,10 @@
 import { type APIGatewayProxyResultV2, LambdaHandler } from "@effect-aws/lambda";
 import { Effect, Layer, Schema, Config, ConfigError, ParseResult } from "effect";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { UserService, UserServiceLive } from "@services/user.js";
-import { UserRepositoryError, UserRepositoryLive } from "@repositories/user.js";
+import { UserService, UserServiceLive } from "@handlers/user/services/user.js";
+import { UserRepositoryError, UserRepositoryLive } from "@handlers/user/repositories/user.js";
 import { ParseBodyError } from "@domain/errors.js";
-import { UserInput } from "@domain/user.js";
+import { UserInput } from "@handlers/user/domain/user.js";
 import { DynamoDB } from "@effect-aws/client-dynamodb";
 
 const usersCrudEffect = Effect.fn("usersCrudEffect")(function* (event: APIGatewayProxyEventV2) {

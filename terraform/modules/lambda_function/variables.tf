@@ -3,8 +3,8 @@ variable "function_name" {
   type        = string
 }
 
-variable "handler" {
-  description = "The handler for the Lambda function."
+variable "index" {
+  description = "The index for the Lambda function."
   type        = string
 }
 

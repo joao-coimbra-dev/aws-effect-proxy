@@ -2,7 +2,7 @@ import { type APIGatewayProxyResultV2, LambdaHandler } from "@effect-aws/lambda"
 import { Config, Effect, ConfigError } from "effect";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { ProxyFetchError, ReadResponseBodyError } from "@domain/errors.js";
-import { filterResponseHeaders } from "@src/utils/filterResponseHeaders.js";
+import { filterResponseHeaders } from "@utils/filterResponseHeaders.js";
 
 const httpProxyEffect: (
   event: APIGatewayProxyEventV2,
@@ -50,7 +50,7 @@ const httpProxyEffect: (
   };
 });
 
-const handler = LambdaHandler.make((event: APIGatewayProxyEventV2) =>
+const index = LambdaHandler.make((event: APIGatewayProxyEventV2) =>
   httpProxyEffect(event).pipe(
     Effect.catchTags({
       ProxyFetchError: (error: ProxyFetchError) =>
@@ -72,4 +72,4 @@ const handler = LambdaHandler.make((event: APIGatewayProxyEventV2) =>
   ),
 );
 
-export { handler };
+export { index };

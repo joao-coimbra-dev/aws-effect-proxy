@@ -21,7 +21,7 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_exec.arn
-  handler       = var.handler
+  index       = var.index
   runtime       = "nodejs24.x"
   architectures = ["arm64"]
 
