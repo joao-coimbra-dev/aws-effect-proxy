@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { Context, Layer, Effect } from "effect";
-import { User, UserInput } from "@domain/user.js";
-import { UserRepository, UserRepositoryError } from "@repositories/user.js";
+import { User, UserInput } from "@handlers/user/domain/user.js";
+import { UserRepository, UserRepositoryError } from "@handlers/user/repositories/user.js";
 
 export class UserService extends Context.Tag("UserService")<
   UserService,

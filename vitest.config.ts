@@ -9,6 +9,7 @@ export default defineConfig({
       "@utils": path.resolve(__dirname, "./src/utils"),
       "@repositories": path.resolve(__dirname, "./src/repositories"),
       "@services": path.resolve(__dirname, "./src/services"),
+      "@handlers": path.resolve(__dirname, "./src/handlers"),
     },
   },
   test: {

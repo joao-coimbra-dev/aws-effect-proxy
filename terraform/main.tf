@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "~> 2.0"
-    }
   }
 }
 
@@ -16,239 +12,43 @@ provider "aws" {
   region = var.aws_region
 }
 
+# --------------------------------------------------------------------------------
+# Modules Instantiation
+# --------------------------------------------------------------------------------
 
-# This operation requires the handler to have been built before
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/../dist/index.mjs"
-  output_path = "${path.module}/../dist/lambda.zip"
+module "users_table" {
+  source     = "./modules/dynamodb_table"
+  table_name = var.dynamodb_table_name
+  hash_key   = "id"
 }
 
-resource "aws_lambda_function" "proxy_lambda" {
+module "proxy_lambda" {
+  source        = "./modules/lambda_function"
   function_name = "transparent-proxy-func"
-  role          = aws_iam_role.lambda_exec.arn
-  handler       = "index.handler" # File is index.js, export is handler
-  runtime       = "nodejs24.x"
-  architectures  = ["arm64"]
-  
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  
-  timeout     = 29
-  memory_size = 128
-
-  dead_letter_config {
-    target_arn = aws_sqs_queue.lambda_dlq.arn
+  index       = "index.index"
+  source_file   = "${path.module}/../dist/index.mjs"
+  output_path   = "${path.module}/../dist/lambda.zip"
+  timeout       = 29
+  environment_variables = {
+    TARGET_URL = var.target_url
   }
-  
-  environment {
-    variables = {
-      TARGET_URL = var.target_url
-    }
-  }
-
-  tags = {
-    Name      = "transparent-proxy-func"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
+  # dlq_target_arn = module.proxy_dlq.arn # We'll create a DLQ module later if needed
 }
 
-resource "aws_iam_role" "lambda_exec" {
-  name = "proxy_lambda_exec_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name      = "proxy-lambda-exec-role"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_logs" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_sqs_queue" "lambda_dlq" {
-  name = "proxy-lambda-dlq"
-
-  tags = {
-    Name      = "proxy-lambda-dlq"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-resource "aws_iam_role_policy" "lambda_dlq_policy" {
-  name = "lambda-dlq-send-message-policy"
-  role = aws_iam_role.lambda_exec.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "sqs:SendMessage"
-        Resource = aws_sqs_queue.lambda_dlq.arn
-      }
-    ]
-  })
-}
-
-resource "aws_apigatewayv2_api" "http_api" {
-  name          = "transparent-proxy-api"
-  protocol_type = "HTTP"
-
-  cors_configuration {
-      allow_origins = ["*"] # Allows requests from any origin
-      allow_methods = ["*"] # Allows all HTTP methods
-      allow_headers = ["*"] # Allows all headers
-  }  
-
-  tags = {
-    Name      = "transparent-proxy-api"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-resource "aws_apigatewayv2_integration" "proxy_integration" {
-  api_id           = aws_apigatewayv2_api.http_api.id
-  integration_type = "AWS_PROXY"
-  
-  integration_uri    = aws_lambda_function.proxy_lambda.invoke_arn
-  integration_method = "POST" 
-  payload_format_version = "2.0"
-}
-
-# Route (Catch-all /{proxy+})
-resource "aws_apigatewayv2_route" "proxy_route" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "ANY /{proxy+}" # Catch all methods and paths
-  target    = "integrations/${aws_apigatewayv2_integration.proxy_integration.id}"
-}
-
-# Default Stage (Auto-deploy)
-resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.http_api.id
-  name        = "$default"
-  auto_deploy = true
-
-  tags = {
-    Name      = "transparent-proxy-default-stage"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-# Permission (Allow API Gateway to invoke Lambda)
-resource "aws_lambda_permission" "apigw_invoke" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.proxy_lambda.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
-}
-
-resource "aws_dynamodb_table" "users_table" {
-  name           = var.dynamodb_table_name
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
-
-  attribute {
-    name = "id"
-    type = "S"
-  }
-
-  tags = {
-    Name      = "${var.dynamodb_table_name}-table"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-# --------------------------------------------------------------------------------
-# Resources for Users CRUD Lambda
-# --------------------------------------------------------------------------------
-
-data "archive_file" "users_lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/../dist/users-handler.mjs"
-  output_path = "${path.module}/../dist/users-lambda.zip"
-}
-
-resource "aws_lambda_function" "users_lambda" {
+module "users_lambda" {
+  source        = "./modules/lambda_function"
   function_name = "users-crud-func"
-  role          = aws_iam_role.users_lambda_exec.arn
-  handler       = "users-handler.handler"
-  runtime       = "nodejs24.x"
-  architectures = ["arm64"]
-
-  filename         = data.archive_file.users_lambda_zip.output_path
-  source_code_hash = data.archive_file.users_lambda_zip.output_base64sha256
-
-  timeout     = 10
-  memory_size = 128
-
-  environment {
-    variables = {
-      USERS_TABLE_NAME = aws_dynamodb_table.users_table.name
-    }
+  index       = "users-index.index"
+  source_file   = "${path.module}/../dist/users-index.mjs"
+  output_path   = "${path.module}/../dist/users-lambda.zip"
+  environment_variables = {
+    USERS_TABLE_NAME = module.users_table.name
   }
-
-  tags = {
-    Name      = "users-crud-func"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-resource "aws_iam_role" "users_lambda_exec" {
-  name = "users_lambda_exec_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name      = "users-lambda-exec-role"
-    Project   = "aws-proxy"
-    ManagedBy = "Terraform"
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "users_lambda_logs" {
-  role       = aws_iam_role.users_lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy" "users_lambda_dynamodb_policy" {
-  name = "users-lambda-dynamodb-policy"
-  role = aws_iam_role.users_lambda_exec.id
-
-  policy = jsonencode({
+  additional_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
+        Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
           "dynamodb:PutItem",
@@ -256,58 +56,125 @@ resource "aws_iam_role_policy" "users_lambda_dynamodb_policy" {
           "dynamodb:DeleteItem",
           "dynamodb:Scan"
         ]
-        Resource = aws_dynamodb_table.users_table.arn
+        Resource = module.users_table.arn
       }
     ]
   })
 }
 
-resource "aws_apigatewayv2_integration" "users_integration" {
-  api_id           = aws_apigatewayv2_api.http_api.id
-  integration_type = "AWS_PROXY"
-
-  integration_uri    = aws_lambda_function.users_lambda.invoke_arn
-  integration_method = "POST"
-  payload_format_version = "2.0"
+module "api_gateway" {
+  source   = "./modules/api_gateway"
+  api_name = "transparent-proxy-api"
+  integrations = {
+    "proxy" = {
+      lambda_invoke_arn    = module.proxy_lambda.invoke_arn
+      lambda_function_name = module.proxy_lambda.function_name
+    }
+    "users" = {
+      lambda_invoke_arn    = module.users_lambda.invoke_arn
+      lambda_function_name = module.users_lambda.function_name
+    }
+    "auth" = {
+      lambda_invoke_arn    = module.auth_lambda.invoke_arn
+      lambda_function_name = module.auth_lambda.function_name
+    }
+  }
+  routes = {
+    "POST /users"        = "users"
+    "GET /users"         = "users"
+    "GET /users/{id}"    = "users"
+    "PUT /users/{id}"    = "users"
+    "DELETE /users/{id}" = "users"
+    "POST /signup"       = "auth"
+    "POST /confirm"      = "auth"
+    "ANY /{proxy+}"      = "proxy"
+  }
 }
 
-# --- Users CRUD Routes ---
-
-resource "aws_apigatewayv2_route" "users_create" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "POST /users"
-  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+module "cognito_user_pool" {
+  source                      = "./modules/cognito_user_pool"
+  user_pool_name              = var.cognito_user_pool_name
+  client_name                 = var.cognito_client_name
+  define_auth_challenge_arn   = module.define_auth_challenge_lambda.arn
+  create_auth_challenge_arn   = module.create_auth_challenge_lambda.arn
+  verify_auth_challenge_arn   = module.verify_auth_challenge_lambda.arn
 }
 
-resource "aws_apigatewayv2_route" "users_list" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /users"
-  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+module "auth_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "auth-func"
+  index       = "auth-index.index"
+  source_file   = "${path.module}/../dist/auth-index.mjs"
+  output_path   = "${path.module}/../dist/auth-lambda.zip"
+  environment_variables = {
+    COGNITO_USER_POOL_ID = module.cognito_user_pool.user_pool_id
+    COGNITO_CLIENT_ID    = module.cognito_user_pool.client_id
+  }
+  additional_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:SignUp",
+          "cognito-idp:ConfirmSignUp",
+          "cognito-idp:AdminInitiateAuth"
+        ]
+        Resource = module.cognito_user_pool.user_pool_arn
+      }
+    ]
+  })
 }
 
-resource "aws_apigatewayv2_route" "users_get" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /users/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+# --------------------------------------------------------------------------------
+# Cognito Trigger Lambdas
+# --------------------------------------------------------------------------------
+
+module "define_auth_challenge_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "define-auth-challenge-func"
+  index       = "define.index"
+  source_file   = "${path.module}/../dist/define.mjs"
+  output_path   = "${path.module}/../dist/define.zip"
 }
 
-resource "aws_apigatewayv2_route" "users_update" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "PUT /users/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+module "create_auth_challenge_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "create-auth-challenge-func"
+  index       = "create.index"
+  source_file   = "${path.module}/../dist/create.mjs"
+  output_path   = "${path.module}/../dist/create.zip"
 }
 
-resource "aws_apigatewayv2_route" "users_delete" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "DELETE /users/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.users_integration.id}"
+module "verify_auth_challenge_lambda" {
+  source        = "./modules/lambda_function"
+  function_name = "verify-auth-challenge-func"
+  index       = "verify.index"
+  source_file   = "${path.module}/../dist/verify.mjs"
+  output_path   = "${path.module}/../dist/verify.zip"
 }
 
+# --------------------------------------------------------------------------------
+# Cognito Trigger Permissions
+# --------------------------------------------------------------------------------
 
-resource "aws_lambda_permission" "apigw_invoke_users" {
-  statement_id  = "AllowAPIGatewayInvokeUsers"
+resource "aws_lambda_permission" "define_auth_challenge" {
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.users_lambda.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+  function_name = module.define_auth_challenge_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = module.cognito_user_pool.user_pool_arn
+}
+
+resource "aws_lambda_permission" "create_auth_challenge" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.create_auth_challenge_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = module.cognito_user_pool.user_pool_arn
+}
+
+resource "aws_lambda_permission" "verify_auth_challenge" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.verify_auth_challenge_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = module.cognito_user_pool.user_pool_arn
 }

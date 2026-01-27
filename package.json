@@ -8,34 +8,37 @@
   "type": "module",
   "main": "src/handler.js",
   "scripts": {
-    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/users-handler.ts --bundle --platform=node --target=node24 --outfile=dist/users-handler.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
+    "build": "esbuild src/handlers/transparent-proxy/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/handlers/user/index.ts --bundle --platform=node --target=node24 --outfile=dist/users-handler.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/handlers/auth/index.ts --bundle --platform=node --target=node24 --outfile=dist/auth-handler.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/handlers/auth/triggers/define.ts --bundle --platform=node --target=node24 --outfile=dist/define.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/triggers/create.ts --bundle --platform=node --target=node24 --outfile=dist/create.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\" && esbuild src/triggers/verify.ts --bundle --platform=node --target=node24 --outfile=dist/verify.mjs --format=esm --external:buffer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "lint:type-aware": "oxlint --type-aware",
     "prepare": "effect-language-service patch",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.971.0",
-    "@aws-sdk/util-dynamodb": "^3.971.0",
-    "@effect-aws/client-dynamodb": "^1.10.6",
+    "@aws-sdk/client-cognito-identity-provider": "^3.975.0",
+    "@aws-sdk/client-dynamodb": "^3.975.0",
+    "@aws-sdk/util-dynamodb": "^3.975.0",
+    "@effect-aws/client-dynamodb": "^1.10.9",
     "@effect-aws/lambda": "^1.5.1",
-    "effect": "^3.19.14"
+    "effect": "^3.19.15"
   },
   "devDependencies": {
     "@effect/language-service": "^0.65.0",
-    "@types/aws-lambda": "^8.10.159",
-    "@types/node": "^25.0.8",
+    "@effect/vitest": "^0.27.0",
+    "@types/aws-lambda": "^8.10.160",
+    "@types/node": "^25.0.10",
+    "@vitest/coverage-v8": "^4.0.18",
     "esbuild": "^0.27.2",
     "oxfmt": "^0.24.0",
-    "oxlint": "^1.39.0",
-    "oxlint-tsgolint": "^0.11.0",
+    "oxlint": "^1.42.0",
+    "oxlint-tsgolint": "^0.11.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.27.0"
 }

@@ -1,7 +1,7 @@
 import { Context, Layer, Effect, Config, Data } from "effect";
 import { DynamoDB } from "@effect-aws/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { User } from "@domain/user.js";
+import { User } from "@handlers/user/domain/user.js";
 
 export class UserRepositoryError extends Data.TaggedError("UserRepositoryError")<{
   readonly cause: unknown;
