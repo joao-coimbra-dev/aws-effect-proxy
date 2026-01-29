@@ -16,6 +16,28 @@ provider "aws" {
 # Modules Instantiation
 # --------------------------------------------------------------------------------
 
+locals {
+  ecr_lambda_names = {
+    proxy           = "transparent-proxy-func"
+    users           = "users-crud-func"
+    auth            = "auth-func"
+    define_challenge = "define-auth-challenge-func"
+    create_challenge = "create-auth-challenge-func"
+    verify_challenge = "verify-auth-challenge-func"
+  }
+}
+
+resource "aws_ecr_repository" "lambdas" {
+  for_each = local.ecr_lambda_names
+  name     = each.value
+
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
 module "users_table" {
   source     = "./modules/dynamodb_table"
   table_name = var.dynamodb_table_name
@@ -25,9 +47,8 @@ module "users_table" {
 module "proxy_lambda" {
   source        = "./modules/lambda_function"
   function_name = "transparent-proxy-func"
-  index       = "index.index"
-  source_file   = "${path.module}/../dist/index.mjs"
-  output_path   = "${path.module}/../dist/lambda.zip"
+  handler       = "index.handler"
+  image_uri     = "${aws_ecr_repository.lambdas["proxy"].repository_url}:latest"
   timeout       = 29
   environment_variables = {
     TARGET_URL = var.target_url
@@ -38,9 +59,8 @@ module "proxy_lambda" {
 module "users_lambda" {
   source        = "./modules/lambda_function"
   function_name = "users-crud-func"
-  index       = "users-index.index"
-  source_file   = "${path.module}/../dist/users-index.mjs"
-  output_path   = "${path.module}/../dist/users-lambda.zip"
+  handler       = "users-index.handler"
+  image_uri     = "${aws_ecr_repository.lambdas["users"].repository_url}:latest"
   environment_variables = {
     USERS_TABLE_NAME = module.users_table.name
   }
@@ -103,9 +123,8 @@ module "cognito_user_pool" {
 module "auth_lambda" {
   source        = "./modules/lambda_function"
   function_name = "auth-func"
-  index       = "auth-index.index"
-  source_file   = "${path.module}/../dist/auth-index.mjs"
-  output_path   = "${path.module}/../dist/auth-lambda.zip"
+  handler       = "auth-index.handler"
+  image_uri     = "${aws_ecr_repository.lambdas["auth"].repository_url}:latest"
   environment_variables = {
     COGNITO_USER_POOL_ID = module.cognito_user_pool.user_pool_id
     COGNITO_CLIENT_ID    = module.cognito_user_pool.client_id
@@ -133,25 +152,22 @@ module "auth_lambda" {
 module "define_auth_challenge_lambda" {
   source        = "./modules/lambda_function"
   function_name = "define-auth-challenge-func"
-  index       = "define.index"
-  source_file   = "${path.module}/../dist/define.mjs"
-  output_path   = "${path.module}/../dist/define.zip"
+  handler       = "define.handler"
+  image_uri     = "${aws_ecr_repository.lambdas["define_challenge"].repository_url}:latest"
 }
 
 module "create_auth_challenge_lambda" {
   source        = "./modules/lambda_function"
   function_name = "create-auth-challenge-func"
-  index       = "create.index"
-  source_file   = "${path.module}/../dist/create.mjs"
-  output_path   = "${path.module}/../dist/create.zip"
+  handler       = "create.handler"
+  image_uri     = "${aws_ecr_repository.lambdas["create_challenge"].repository_url}:latest"
 }
 
 module "verify_auth_challenge_lambda" {
   source        = "./modules/lambda_function"
   function_name = "verify-auth-challenge-func"
-  index       = "verify.index"
-  source_file   = "${path.module}/../dist/verify.mjs"
-  output_path   = "${path.module}/../dist/verify.zip"
+  handler       = "verify.handler"
+  image_uri     = "${aws_ecr_repository.lambdas["verify_challenge"].repository_url}:latest"
 }
 
 # --------------------------------------------------------------------------------

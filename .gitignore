@@ -14,5 +14,6 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 /.idea/
+.env
 /GEMINI.md
 /coverage/

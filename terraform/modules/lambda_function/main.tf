@@ -5,28 +5,15 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "~> 2.7"
-    }
   }
-}
-
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = var.source_file
-  output_path = var.output_path
 }
 
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_exec.arn
-  index       = var.index
-  runtime       = "nodejs24.x"
   architectures = ["arm64"]
-
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  package_type  = "Image"
+  image_uri     = var.image_uri
 
   timeout     = var.timeout
   memory_size = var.memory_size
