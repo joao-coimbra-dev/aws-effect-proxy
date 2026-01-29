@@ -33,17 +33,16 @@ Incoming Request -> API Gateway -> Route Resolution
 
 ## API Endpoints
 
-| Method | Path | Service | Description |
-| --- | --- | --- | --- |
-| `POST` | `/signup` | Auth | Registers a new user in the Cognito User Pool. |
-| `POST` | `/confirm` | Auth | Confirms a new user's registration. |
-| `POST` | `/users` | User | Creates a new user in the DynamoDB table. |
-| `GET` | `/users` | User | Retrieves all users from the DynamoDB table. |
-| `GET` | `/users/{id}` | User | Retrieves a single user by their ID. |
-| `PUT` | `/users/{id}` | User | Updates a user's information. |
-| `DELETE` | `/users/{id}` | User | Deletes a user from the DynamoDB table. |
-| `ANY` | `/{proxy+}` | Proxy | Forwards the request to a pre-configured `TARGET_URL`. |
-
+| Method   | Path          | Service | Description                                            |
+| -------- | ------------- | ------- | ------------------------------------------------------ |
+| `POST`   | `/signup`     | Auth    | Registers a new user in the Cognito User Pool.         |
+| `POST`   | `/confirm`    | Auth    | Confirms a new user's registration.                    |
+| `POST`   | `/users`      | User    | Creates a new user in the DynamoDB table.              |
+| `GET`    | `/users`      | User    | Retrieves all users from the DynamoDB table.           |
+| `GET`    | `/users/{id}` | User    | Retrieves a single user by their ID.                   |
+| `PUT`    | `/users/{id}` | User    | Updates a user's information.                          |
+| `DELETE` | `/users/{id}` | User    | Deletes a user from the DynamoDB table.                |
+| `ANY`    | `/{proxy+}`   | Proxy   | Forwards the request to a pre-configured `TARGET_URL`. |
 
 ## How to use it
 
