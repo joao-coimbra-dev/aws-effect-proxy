@@ -3,21 +3,6 @@ variable "function_name" {
   type        = string
 }
 
-variable "index" {
-  description = "The index for the Lambda function."
-  type        = string
-}
-
-variable "source_file" {
-  description = "The path to the source code file for the Lambda."
-  type        = string
-}
-
-variable "output_path" {
-  description = "The path to output the zipped Lambda artifact."
-  type        = string
-}
-
 variable "timeout" {
   description = "The timeout for the Lambda function."
   type        = number
@@ -47,3 +32,14 @@ variable "additional_policy" {
   type        = string
   default     = null
 }
+
+variable "image_uri" {
+  description = "The URI of the Docker image for the Lambda function."
+  type        = string
+}
+
+variable "handler" {
+  description = "The handler for the Lambda function."
+  type        = string
+}
+
